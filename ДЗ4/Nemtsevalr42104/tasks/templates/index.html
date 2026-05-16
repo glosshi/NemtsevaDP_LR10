@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Настройка адаптивного отображения страницы на мобильных устройствах -->
+
+  <title>Панель мониторинга безопасности</title>
+  <!-- Заголовок страницы во вкладке браузера -->
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Подключение библиотеки Bootstrap для использования сетки и готовых стилей -->
+
+  <style>
+    body {
+      background: linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
+      color: #1e293b;
+    }
+    .app-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+    }
+    .hero {
+      background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+      border: 1px solid #dbeafe;
+      border-radius: 28px;
+      box-shadow: 0 16px 36px rgba(59, 130, 246, 0.10);
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #0f172a;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .metric-tile {
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+      transition: 0.25s ease;
+      height: 100%;
+    }
+    .metric-tile:hover {
+      transform: translateY(-3px);
+    }
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .nav-btn {
+      border-radius: 16px;
+      font-weight: 600;
+      padding: 14px 18px;
+    }
+    .small-muted {
+      color: #64748b;
+    }
+    .status-chip {
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+    .section-title {
+      font-weight: 800;
+      font-size: 1.15rem;
+    }
+  </style>
+</head>
+
+<body>
+  {% csrf_token %}
+  <!-- Django-токен защиты от CSRF-атак при работе с формами и запросами -->
+
+  <div class="container py-4 py-lg-5">
+    <div class="hero p-4 p-lg-5 mb-4">
+      <div class="d-flex flex-column flex-lg-row justify-content-between gap-4 align-items-lg-center">
+        <div>
+          <span class="hero-badge mb-3">Панель мониторинга безопасности</span>
+          <!-- Выделенная подпись главного блока страницы -->
+
+          <h1 class="fw-bold mb-3">Контейнер защиты банковского приложения</h1>
+          <!-- Основной заголовок главной страницы -->
+
+          <p class="mb-0 text-secondary">
+            Веб-интерфейс предназначен для мониторинга сетевых потоков, регистрации событий информационной безопасности,
+            визуальной оценки уровня риска, управления блокировками и анализа динамики подозрительной активности.
+          </p>
+          <!-- Описание назначения системы -->
+        </div>
+
+        <div class="d-flex flex-column gap-2">
+          <div class="status-chip">Критические события: <span id="chipCritical">0</span></div>
+          <!-- Индикатор количества критических событий -->
+
+          <div class="status-chip">Средний риск: <span id="chipMedium">0</span></div>
+          <!-- Индикатор количества потоков со средним риском -->
+
+          <div class="status-chip">Стабильные потоки: <span id="chipStable">0</span></div>
+          <!-- Индикатор количества стабильных потоков -->
+        </div>
+      </div>
+    </div>
+
+    <div class="app-card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <div>
+          <div class="section-title">Сводные показатели</div>
+          <!-- Заголовок блока со сводными метриками -->
+
+          <div class="small-muted">Все значения обновляются автоматически по введённым данным.</div>
+          <!-- Пояснение о динамическом обновлении показателей -->
+        </div>
+
+        <button class="btn btn-outline-secondary nav-btn" onclick="resetAllData()">Сбросить все данные</button>
+        <!-- Кнопка удаления всех сохранённых записей системы -->
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-6 col-xl-3">
+          <div class="card metric-tile">
+            <div class="card-body">
+              <div class="text-danger fw-bold mb-2">Высокий риск</div>
+              <!-- Название метрики критического риска -->
+
+              <div class="metric-value text-danger" id="kpiHigh">0</div>
+              <!-- Значение количества потоков с высоким риском -->
+
+              <div class="small-muted mt-2">Количество потоков с критической оценкой риска.</div>
+              <!-- Описание метрики -->
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <div class="card metric-tile">
+            <div class="card-body">
+              <div class="text-warning fw-bold mb-2">Подозрительные IP</div>
+              <!-- Название метрики подозрительных IP-адресов -->
+
+              <div class="metric-value text-warning" id="kpiSuspicious">0</div>
+              <!-- Значение количества подозрительных IP -->
+
+              <div class="small-muted mt-2">Уникальные адреса с выявленными признаками аномалий.</div>
+              <!-- Описание метрики -->
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <div class="card metric-tile">
+            <div class="card-body">
+              <div class="text-primary fw-bold mb-2">Активные проверки</div>
+              <!-- Название метрики общего числа анализов -->
+
+              <div class="metric-value text-primary" id="kpiChecks">0</div>
+              <!-- Значение общего количества проанализированных записей -->
+
+              <div class="small-muted mt-2">Общее число проанализированных сетевых записей.</div>
+              <!-- Описание метрики -->
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <div class="card metric-tile">
+            <div class="card-body">
+              <div class="text-success fw-bold mb-2">Защищённые узлы</div>
+              <!-- Название метрики безопасных потоков -->
+
+              <div class="metric-value text-success" id="kpiStable">0</div>
+              <!-- Значение количества потоков без критических отклонений -->
+
+              <div class="small-muted mt-2">Количество потоков без критических отклонений.</div>
+              <!-- Описание метрики -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-card p-4 mb-4">
+      <div class="section-title mb-3">Разделы системы</div>
+      <!-- Заголовок блока навигации по разделам -->
+
+      <div class="row g-3">
+        <div class="col-md-6 col-xl-3">
+          <a href="{% url 'traffic' %}" class="btn btn-outline-primary nav-btn w-100">Анализ трафика</a>
+          <!-- Переход на страницу анализа сетевого трафика -->
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <a href="{% url 'logs' %}" class="btn btn-outline-primary nav-btn w-100">Журнал событий</a>
+          <!-- Переход на страницу журнала событий безопасности -->
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <a href="{% url 'analytics' %}" class="btn btn-outline-primary nav-btn w-100">Аналитика риска</a>
+          <!-- Переход на страницу аналитики риска -->
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <a href="{% url 'blocks' %}" class="btn btn-outline-primary nav-btn w-100">Блокировки</a>
+          <!-- Переход на страницу управления блокировками -->
+        </div>
+      </div>
+    </div>
+
+    <div class="app-card p-4">
+      <div class="section-title mb-3">О системе</div>
+      <!-- Заголовок информационного блока о назначении системы -->
+
+      <p class="mb-0 text-secondary">
+        Интерфейс поддерживает регистрацию исследуемых потоков, ведение журнала инцидентов, отображение актуального состояния мониторинга,
+        расчёт интегральной оценки риска и формирование перечня заблокированных адресов на основе зафиксированных событий.
+      </p>
+      <!-- Краткое описание возможностей разработанного веб-интерфейса -->
+    </div>
+  </div>
+
+  <script>
+    function loadJSON(key, fallback) {
+      // Универсальная функция безопасной загрузки данных из localStorage
+
+      try {
+        // Попытка считать и преобразовать данные из localStorage
+
+        return JSON.parse(localStorage.getItem(key)) || fallback;
+        // Возврат сохранённых данных или значения по умолчанию
+      } catch (e) {
+        // Обработка ошибки при некорректном формате данных
+
+        return fallback;
+        // Возврат резервного значения при ошибке чтения
+      }
+    }
+
+    function getTraffic() {
+      // Функция получения массива записей сетевого трафика
+
+      return loadJSON('trafficRecords', []);
+      // Возврат массива trafficRecords или пустого массива по умолчанию
+    }
+
+    function getBlocks() {
+      // Функция получения массива блокировок
+
+      return loadJSON('blockRecords', []);
+      // Возврат массива blockRecords или пустого массива
+    }
+
+    function updateDashboard() {
+      // Функция обновления всех сводных показателей на главной панели
+
+      const traffic = getTraffic();
+      // Получение списка всех зарегистрированных сетевых потоков
+
+      const high = traffic.filter(x => x.risk >= 0.7).length;
+      // Подсчёт количества потоков с высоким уровнем риска
+
+      const medium = traffic.filter(x => x.risk >= 0.4 && x.risk < 0.7).length;
+      // Подсчёт количества потоков со средним уровнем риска
+
+      const stable = traffic.filter(x => x.risk < 0.4).length;
+      // Подсчёт количества стабильных потоков с низким риском
+
+      const suspicious = new Set(traffic.filter(x => x.risk >= 0.4).map(x => x.ip)).size;
+      // Подсчёт количества уникальных подозрительных IP-адресов
+
+      const checks = traffic.length;
+      // Подсчёт общего количества проанализированных записей
+
+      document.getElementById('chipCritical').textContent = high;
+      // Вывод значения критических событий в верхнем индикаторе
+
+      document.getElementById('chipMedium').textContent = medium;
+      // Вывод значения среднего риска в верхнем индикаторе
+
+      document.getElementById('chipStable').textContent = stable;
+      // Вывод значения стабильных потоков в верхнем индикаторе
+
+      document.getElementById('kpiHigh').textContent = high;
+      // Вывод количества потоков с высоким риском в карточке метрики
+
+      document.getElementById('kpiSuspicious').textContent = suspicious;
+      // Вывод количества подозрительных IP-адресов в карточке метрики
+
+      document.getElementById('kpiChecks').textContent = checks;
+      // Вывод общего числа проверок в карточке метрики
+
+      document.getElementById('kpiStable').textContent = stable;
+      // Вывод количества стабильных потоков в карточке метрики
+    }
+
+    function resetAllData() {
+      // Функция полного сброса всех сохранённых данных системы
+
+      if (!confirm('Удалить все введённые данные, журналы и блокировки?')) return;
+      // Запрос подтверждения у пользователя перед удалением данных
+
+      localStorage.removeItem('trafficRecords');
+      // Удаление сохранённых записей сетевого трафика
+
+      localStorage.removeItem('securityLogs');
+      // Удаление журнала событий безопасности
+
+      localStorage.removeItem('blockRecords');
+      // Удаление списка заблокированных адресов
+
+      updateDashboard();
+      // Повторное обновление панели после очистки данных
+    }
+
+    updateDashboard();
+    // Первичное заполнение главной панели актуальными значениями при открытии страницы
+  </script>
+</body>
+</html>

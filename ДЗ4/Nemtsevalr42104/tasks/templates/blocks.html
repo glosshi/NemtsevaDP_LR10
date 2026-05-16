@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Настройка адаптивного отображения страницы на мобильных устройствах -->
+
+  <title>Блокировки</title>
+  <!-- Заголовок страницы во вкладке браузера -->
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Подключение библиотеки Bootstrap для использования готовых стилей -->
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <!-- Подключение библиотеки SheetJS для выгрузки данных в Excel -->
+
+  <style>
+    body { background: #f8fafc; color: #0f172a; }
+    .panel {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+    }
+    .form-control {
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-4">
+    <div class="panel p-4 mb-4">
+      <h2 class="mb-2">Управление блокировками</h2>
+      <!-- Заголовок страницы управления блокировками -->
+
+      <p class="mb-0 text-secondary">
+        Раздел содержит фактически зарегистрированные блокировки и позволяет вручную внести новую запись в систему.
+      </p>
+      <!-- Пояснение к назначению раздела -->
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="panel p-4">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h4 class="mb-0">Текущие блокировки</h4>
+            <!-- Заголовок таблицы с текущими блокировками -->
+
+            <span class="badge bg-light text-dark" id="blockCount">0 записей</span>
+            <!-- Счётчик количества записей в таблице блокировок -->
+          </div>
+
+          <div class="table-responsive">
+            <table class="table align-middle" id="blockTable">
+              <!-- Таблица для отображения зарегистрированных блокировок -->
+
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <!-- Заголовок столбца с датой блокировки -->
+
+                  <th>Время</th>
+                  <!-- Заголовок столбца со временем блокировки -->
+
+                  <th>IP-адрес</th>
+                  <!-- Заголовок столбца с IP-адресом -->
+
+                  <th>Причина</th>
+                  <!-- Заголовок столбца с причиной блокировки -->
+                </tr>
+              </thead>
+
+              <tbody id="blockTableBody"></tbody>
+              <!-- Тело таблицы, которое будет заполняться динамически через JavaScript -->
+            </table>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-success" onclick="exportBlocksExcel()">Выгрузка в Excel</button>
+            <!-- Кнопка запуска функции выгрузки таблицы блокировок в Excel -->
+
+            <a href="{% url 'index' %}" class="btn btn-outline-primary">На главную</a>
+            <!-- Ссылка возврата на главную страницу приложения -->
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="panel p-4">
+          <h4 class="mb-3">Добавить блокировку</h4>
+          <!-- Заголовок формы добавления новой блокировки -->
+
+          <div class="mb-3">
+            <label class="form-label">Дата блокировки</label>
+            <!-- Подпись поля ввода даты -->
+
+            <input type="text" class="form-control" id="blockDate" placeholder="дд/мм/гггг" maxlength="10" required>
+            <!-- Поле ввода даты блокировки с ограничением длины -->
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Время блокировки</label>
+            <!-- Подпись поля ввода времени -->
+
+            <input type="time" class="form-control" id="blockTime" required>
+            <!-- Поле выбора времени блокировки -->
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">IP-адрес</label>
+            <!-- Подпись поля для ввода IP-адреса -->
+
+            <input type="text" class="form-control" id="blockIp" placeholder="Например: 192.168.10.14">
+            <!-- Поле ввода IP-адреса -->
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Причина блокировки</label>
+            <!-- Подпись поля ввода причины -->
+
+            <input type="text" class="form-control" id="blockReason" placeholder="Введите основание блокировки">
+            <!-- Поле ввода причины блокировки -->
+          </div>
+
+          <button class="btn btn-danger w-100" onclick="addBlock()">Сохранить блокировку</button>
+          <!-- Кнопка вызова функции сохранения новой блокировки -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getBlocks() {
+      // Функция получает список блокировок из localStorage
+
+      return JSON.parse(localStorage.getItem('blockRecords') || '[]');
+      // Возвращает массив blockRecords или пустой массив, если записей нет
+    }
+
+    function saveBlocks(records) {
+      // Функция сохраняет массив блокировок в localStorage
+
+      localStorage.setItem('blockRecords', JSON.stringify(records));
+      // Преобразует массив в JSON-строку и сохраняет по ключу blockRecords
+    }
+
+    function getLogs() {
+      // Функция получает журнал событий из localStorage
+
+      return JSON.parse(localStorage.getItem('securityLogs') || '[]');
+      // Возвращает массив securityLogs или пустой массив при отсутствии записей
+    }
+
+    function saveLogs(logs) {
+      // Функция сохраняет журнал событий в localStorage
+
+      localStorage.setItem('securityLogs', JSON.stringify(logs));
+      // Преобразует массив логов в JSON-строку и сохраняет по ключу securityLogs
+    }
+
+    function normalizeDateInput(value) {
+      // Функция приводит ввод даты к формату ДД/ММ/ГГГГ
+
+      let cleaned = value.replace(/[^\d]/g, '').slice(0, 8);
+      // Удаляет все символы кроме цифр и ограничивает длину до 8 символов
+
+      if (cleaned.length >= 5) {
+        // Если введено не менее 5 цифр, формируется полный шаблон даты
+
+        return cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4) + '/' + cleaned.slice(4);
+        // Возвращает строку в формате ДД/ММ/ГГГГ
+      }
+
+      if (cleaned.length >= 3) {
+        // Если введено от 3 до 4 цифр, добавляется первый разделитель
+
+        return cleaned.slice(0, 2) + '/' + cleaned.slice(2);
+        // Возвращает промежуточный формат ДД/ММ
+      }
+
+      return cleaned;
+      // Если цифр меньше трёх, возвращается текущее значение без полной маски
+    }
+
+    function isValidDate(value) {
+      // Функция проверяет корректность даты
+
+      if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return false;
+      // Проверяет соответствие формату ДД/ММ/ГГГГ
+
+      const [dd, mm, yyyy] = value.split('/').map(Number);
+      // Разделяет дату на день, месяц и год и преобразует в числа
+
+      const date = new Date(yyyy, mm - 1, dd);
+      // Создаёт объект даты JavaScript
+
+      return date.getFullYear() === yyyy && date.getMonth() === mm - 1 && date.getDate() === dd;
+      // Проверяет, что дата существует реально, а не только соответствует шаблону
+    }
+
+    document.getElementById('blockDate').addEventListener('input', function () {
+      // Обработчик события ввода даты
+
+      this.value = normalizeDateInput(this.value);
+      // Автоматически форматирует введённое значение даты
+    });
+
+    function addBlock() {
+      // Основная функция добавления новой блокировки
+
+      const date = document.getElementById('blockDate').value.trim();
+      // Получение даты из поля формы
+
+      const time = document.getElementById('blockTime').value;
+      // Получение времени из поля формы
+
+      const ip = document.getElementById('blockIp').value.trim();
+      // Получение IP-адреса из поля формы
+
+      const reason = document.getElementById('blockReason').value.trim();
+      // Получение причины блокировки из поля формы
+
+      if (!date || !time || !ip || !reason) {
+        // Проверка, что все поля формы заполнены
+
+        alert('Заполните все поля формы.');
+        // Вывод предупреждения пользователю
+
+        return;
+        // Прерывание выполнения функции при незаполненных полях
+      }
+
+      if (!isValidDate(date)) {
+        // Проверка корректности введённой даты
+
+        alert('Введите дату в формате ДД/ММ/ГГГГ.');
+        // Вывод сообщения об ошибке формата даты
+
+        return;
+        // Прерывание выполнения функции
+      }
+
+      const blocks = getBlocks();
+      // Получение текущего списка блокировок
+
+      blocks.unshift({ date, time, ip, reason });
+      // Добавление новой блокировки в начало массива
+
+      saveBlocks(blocks);
+      // Сохранение обновлённого списка блокировок
+
+      const logs = getLogs();
+      // Получение текущего журнала событий
+
+      logs.unshift({
+        // Добавление новой записи в журнал событий
+
+        date,
+        // Дата блокировки
+
+        time,
+        // Время блокировки
+
+        level: 'CRITICAL',
+        // Уровень события безопасности
+
+        text: `Зарегистрирована блокировка адреса ${ip}. Основание: ${reason}.`
+        // Текстовое описание события
+      });
+
+      saveLogs(logs);
+      // Сохранение обновлённого журнала событий
+
+      document.getElementById('blockDate').value = '';
+      // Очистка поля даты после сохранения
+
+      document.getElementById('blockTime').value = '';
+      // Очистка поля времени
+
+      document.getElementById('blockIp').value = '';
+      // Очистка поля IP-адреса
+
+      document.getElementById('blockReason').value = '';
+      // Очистка поля причины блокировки
+
+      renderBlocks();
+      // Обновление таблицы блокировок на странице
+    }
+
+    function renderBlocks() {
+      // Функция отображения всех блокировок в таблице
+
+      const blocks = getBlocks();
+      // Получение массива сохранённых блокировок
+
+      const body = document.getElementById('blockTableBody');
+      // Получение ссылки на тело таблицы
+
+      body.innerHTML = '';
+      // Очистка содержимого таблицы перед повторной отрисовкой
+
+      blocks.forEach(item => {
+        // Перебор всех блокировок для добавления строк в таблицу
+
+        body.innerHTML += `
+          <tr>
+            <td>${item.date}</td>
+            <td>${item.time}</td>
+            <td>${item.ip}</td>
+            <td>${item.reason}</td>
+          </tr>
+        `;
+        // Формирование строки таблицы с данными по одной блокировке
+      });
+
+      document.getElementById('blockCount').textContent = `${blocks.length} записей`;
+      // Обновление счётчика количества записей
+
+      if (blocks.length === 0) {
+        // Проверка случая, когда блокировки ещё не добавлены
+
+        body.innerHTML = `<tr><td colspan="4" class="text-secondary">Блокировки ещё не зарегистрированы.</td></tr>`;
+        // Вывод информационного сообщения в таблице при отсутствии данных
+      }
+    }
+
+    function exportBlocksExcel() {
+      // Функция экспорта списка блокировок в Excel
+
+      const blocks = getBlocks();
+      // Получение массива блокировок из localStorage
+
+      if (!blocks.length) {
+        // Проверка наличия данных для выгрузки
+
+        alert('Нет данных для выгрузки.');
+        // Вывод сообщения об отсутствии данных
+
+        return;
+        // Прерывание выполнения функции
+      }
+
+      const data = blocks.map(item => ({
+        // Преобразование массива блокировок в удобный формат для Excel
+
+        Дата: item.date,
+        // Поле даты блокировки
+
+        Время: item.time,
+        // Поле времени блокировки
+
+        'IP-адрес': item.ip,
+        // Поле IP-адреса
+
+        Причина: item.reason
+        // Поле причины блокировки
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      // Создание Excel-листа из подготовленных данных
+
+      const wb = XLSX.utils.book_new();
+      // Создание новой Excel-книги
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Blocks');
+      // Добавление листа с блокировками в книгу
+
+      XLSX.writeFile(wb, 'block_records.xlsx');
+      // Сохранение и скачивание Excel-файла
+    }
+
+    renderBlocks();
+    // Первичная отрисовка таблицы блокировок при открытии страницы
+  </script>
+  <!-- Скрипт отвечает за ввод, хранение, отображение и экспорт блокировок -->
+
+</body>
+</html>

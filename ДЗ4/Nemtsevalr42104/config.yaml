@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: security-app
+  labels:
+    app: security-app
+spec:
+  containers:
+  - name: db
+    image: mariadb:11
+    env:
+    - name: MARIADB_DATABASE
+      value: "mydb"
+    - name: MARIADB_USER
+      value: "myuser"
+    - name: MARIADB_PASSWORD
+      value: "mypassword"
+    - name: MARIADB_ROOT_PASSWORD
+      value: "rootpassword"
+    ports:
+    - containerPort: 3306
+
+  - name: web
+    image: nemtsevalr42104-web:latest
+    imagePullPolicy: Never
+    env:
+    - name: DB_NAME
+      value: "mydb"
+    - name: DB_USER
+      value: "myuser"
+    - name: DB_PASSWORD
+      value: "mypassword"
+    - name: DB_HOST
+      value: "127.0.0.1"
+    - name: DB_PORT
+      value: "3306"
+    ports:
+    - containerPort: 8000
+
+  - name: admin
+    image: phpmyadmin/phpmyadmin
+    env:
+    - name: PMA_HOST
+      value: "127.0.0.1"
+    - name: PMA_USER
+      value: "myuser"
+    - name: PMA_PASSWORD
+      value: "mypassword"
+    ports:
+    - containerPort: 80
+
+  - name: nginx
+    image: nginx:alpine
+    command: ["/bin/sh", "-c"]
+    args:
+      - |
+        echo 'events {}
+        http {
+          server {
+            listen 8080;
+            location / {
+              proxy_pass http://localhost:8000;
+            }
+          }
+        }' > /etc/nginx/nginx.conf && nginx -g 'daemon off;'
+    ports:
+    - containerPort: 8080

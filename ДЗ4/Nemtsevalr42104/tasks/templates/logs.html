@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<!-- Объявление типа документа HTML5 -->
+
+<html lang="ru">
+<!-- Корневой элемент HTML-документа с указанием русского языка -->
+
+<head>
+  <meta charset="utf-8">
+  <!-- Установка кодировки UTF-8 для корректного отображения русских символов -->
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Настройка адаптивного отображения страницы на мобильных устройствах -->
+
+  <title>Журнал событий</title>
+  <!-- Заголовок страницы во вкладке браузера -->
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Подключение Bootstrap для использования готовых стилей интерфейса -->
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <!-- Подключение библиотеки SheetJS для экспорта данных в Excel -->
+
+  <style>
+    body { background: #f8fafc; color: #0f172a; }
+    .panel {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+    }
+    .log-row {
+      border-radius: 18px;
+      border: 1px solid #e2e8f0;
+      padding: 16px;
+      background: #f8fafc;
+    }
+    .tag {
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .tag-info { background: #dbeafe; color: #1d4ed8; }
+    .tag-warning { background: #fef3c7; color: #92400e; }
+    .tag-critical { background: #fee2e2; color: #b91c1c; }
+    .hidden-section { display: none; }
+    .form-control, .form-select {
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-4">
+    <div class="panel p-4 mb-4">
+      <h2 class="mb-2">Журнал событий безопасности</h2>
+      <!-- Заголовок страницы журнала событий -->
+
+      <p class="mb-0 text-secondary">
+        В разделе отображаются зарегистрированные события мониторинга. Список формируется на основании фактически сохранённых записей системы.
+      </p>
+      <!-- Краткое описание назначения страницы -->
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="panel p-4">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h4 class="mb-0">Последние события</h4>
+            <!-- Заголовок блока последних событий -->
+
+            <span class="badge bg-light text-dark" id="logCount">0 записей</span>
+            <!-- Счётчик общего количества событий -->
+          </div>
+
+          <div id="lastLogs" class="d-grid gap-3"></div>
+          <!-- Контейнер для отображения последних событий -->
+
+          <div id="allLogsWrapper" class="hidden-section mt-4">
+            <h5 class="mb-3">Полный журнал</h5>
+            <!-- Заголовок полного журнала событий -->
+
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <!-- Таблица полного журнала событий -->
+
+                <thead>
+                  <tr>
+                    <th>Дата</th>
+                    <!-- Заголовок столбца даты -->
+
+                    <th>Время</th>
+                    <!-- Заголовок столбца времени -->
+
+                    <th>Уровень</th>
+                    <!-- Заголовок столбца уровня события -->
+
+                    <th>Описание</th>
+                    <!-- Заголовок столбца описания события -->
+                  </tr>
+                </thead>
+
+                <tbody id="allLogsTable"></tbody>
+                <!-- Тело таблицы, заполняемое через JavaScript -->
+              </table>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <button class="btn btn-outline-primary" onclick="toggleAllLogs()">Показать полный журнал</button>
+            <!-- Кнопка показа или скрытия полного журнала -->
+
+            <button class="btn btn-success" onclick="exportLogsExcel()">Выгрузка в Excel</button>
+            <!-- Кнопка выгрузки журнала событий в Excel -->
+
+            <a href="{% url 'index' %}" class="btn btn-outline-secondary">На главную</a>
+            <!-- Ссылка возврата на главную страницу -->
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="panel p-4">
+          <h4 class="mb-3">Регистрация события</h4>
+          <!-- Заголовок формы добавления нового события -->
+
+          <div class="mb-3">
+            <label class="form-label">Дата события</label>
+            <!-- Подпись поля даты -->
+
+            <input type="date" id="logDate" class="form-control" required>
+            <!-- Поле выбора даты события -->
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Время события</label>
+            <!-- Подпись поля времени -->
+
+            <input type="time" id="logTime" class="form-control" required>
+            <!-- Поле выбора времени события -->
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Уровень</label>
+            <!-- Подпись поля выбора уровня события -->
+
+            <select id="logLevel" class="form-select">
+              <!-- Выпадающий список выбора уровня события -->
+
+              <option value="INFO">INFO</option>
+              <!-- Информационный уровень -->
+
+              <option value="WARNING">WARNING</option>
+              <!-- Уровень предупреждения -->
+
+              <option value="CRITICAL">CRITICAL</option>
+              <!-- Критический уровень -->
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Описание</label>
+            <!-- Подпись текстового поля описания -->
+
+            <textarea id="logText" class="form-control" rows="4" placeholder="Введите формальное описание события"></textarea>
+            <!-- Поле ввода текстового описания события -->
+          </div>
+
+          <button class="btn btn-primary w-100" onclick="addManualLog()">Сохранить событие</button>
+          <!-- Кнопка сохранения нового события -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getLogs() {
+      // Функция получения журнала событий из localStorage
+
+      return JSON.parse(localStorage.getItem('securityLogs') || '[]');
+      // Возвращает массив securityLogs или пустой массив
+    }
+
+    function saveLogs(logs) {
+      // Функция сохранения журнала событий в localStorage
+
+      localStorage.setItem('securityLogs', JSON.stringify(logs));
+      // Преобразует массив логов в JSON-строку и сохраняет его
+    }
+
+    function formatDateToDisplay(isoDate) {
+      // Функция преобразования даты из формата ГГГГ-ММ-ДД в ДД/ММ/ГГГГ
+
+      if (!isoDate) return '';
+      // Если дата отсутствует, возвращается пустая строка
+
+      const parts = isoDate.split('-');
+      // Разделение даты по символу дефиса
+
+      if (parts.length !== 3) return isoDate;
+      // Если формат даты нестандартный, возвращается исходное значение
+
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      // Возвращает дату в привычном отображаемом формате
+    }
+
+    function addManualLog() {
+      // Функция ручного добавления нового события в журнал
+
+      const date = document.getElementById('logDate').value;
+      // Получение введённой даты события
+
+      const time = document.getElementById('logTime').value;
+      // Получение введённого времени события
+
+      const level = document.getElementById('logLevel').value;
+      // Получение выбранного уровня события
+
+      const text = document.getElementById('logText').value.trim();
+      // Получение текстового описания события без лишних пробелов
+
+      if (!date || !time || !text) {
+        // Проверка обязательного заполнения даты, времени и описания
+
+        alert('Заполните дату, время и описание события.');
+        // Вывод сообщения об ошибке при незаполненных полях
+
+        return;
+        // Прерывание выполнения функции
+      }
+
+      const logs = getLogs();
+      // Получение текущего списка логов
+
+      logs.unshift({ date, time, level, text });
+      // Добавление нового события в начало массива
+
+      saveLogs(logs);
+      // Сохранение обновлённого журнала событий
+
+      document.getElementById('logDate').value = '';
+      // Очистка поля даты после сохранения
+
+      document.getElementById('logTime').value = '';
+      // Очистка поля времени после сохранения
+
+      document.getElementById('logLevel').value = 'INFO';
+      // Сброс уровня события к значению по умолчанию
+
+      document.getElementById('logText').value = '';
+      // Очистка поля описания события
+
+      renderLogs();
+      // Повторная отрисовка списка событий после добавления новой записи
+    }
+
+    function levelClass(level) {
+      // Функция выбора CSS-класса в зависимости от уровня события
+
+      if (level === 'CRITICAL') return 'tag tag-critical';
+      // Для критического события возвращается красный стиль
+
+      if (level === 'WARNING') return 'tag tag-warning';
+      // Для предупреждения возвращается жёлтый стиль
+
+      return 'tag tag-info';
+      // Для остальных событий возвращается синий информационный стиль
+    }
+
+    function renderLogs() {
+      // Функция отображения последних событий и полного журнала
+
+      const logs = getLogs();
+      // Получение всех сохранённых событий
+
+      document.getElementById('logCount').textContent = `${logs.length} записей`;
+      // Обновление счётчика общего количества записей
+
+      const lastLogs = document.getElementById('lastLogs');
+      // Получение контейнера последних событий
+
+      const allLogsTable = document.getElementById('allLogsTable');
+      // Получение тела таблицы полного журнала
+
+      lastLogs.innerHTML = '';
+      // Очистка блока последних событий перед заполнением
+
+      allLogsTable.innerHTML = '';
+      // Очистка таблицы полного журнала перед заполнением
+
+      logs.slice(0, 4).forEach(item => {
+        // Перебор первых четырёх событий для показа в кратком списке
+
+        lastLogs.innerHTML += `
+          <div class="log-row">
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+              <strong>${formatDateToDisplay(item.date)} ${item.time}</strong>
+              <span class="${levelClass(item.level)}">${item.level}</span>
+            </div>
+            <div>${item.text}</div>
+          </div>
+        `;
+        // Добавление карточки события в блок последних записей
+      });
+
+      logs.forEach(item => {
+        // Перебор всех событий для формирования полного журнала
+
+        allLogsTable.innerHTML += `
+          <tr>
+            <td>${formatDateToDisplay(item.date)}</td>
+            <td>${item.time}</td>
+            <td><span class="${levelClass(item.level)}">${item.level}</span></td>
+            <td>${item.text}</td>
+          </tr>
+        `;
+        // Добавление строки в таблицу полного журнала
+      });
+
+      if (logs.length === 0) {
+        // Проверка отсутствия событий в журнале
+
+        lastLogs.innerHTML = `<div class="text-secondary">События ещё не зарегистрированы.</div>`;
+        // Вывод сообщения о том, что событий пока нет
+      }
+    }
+
+    function toggleAllLogs() {
+      // Функция переключения видимости полного журнала
+
+      const box = document.getElementById('allLogsWrapper');
+      // Получение контейнера полного журнала
+
+      box.style.display = box.style.display === 'none' || box.style.display === '' ? 'block' : 'none';
+      // Если журнал скрыт — показать, если показан — скрыть
+    }
+
+    function exportLogsExcel() {
+      // Функция экспорта журнала событий в Excel
+
+      const logs = getLogs();
+      // Получение массива событий
+
+      if (!logs.length) {
+        // Проверка наличия записей для выгрузки
+
+        alert('Нет данных для выгрузки.');
+        // Вывод сообщения об отсутствии данных
+
+        return;
+        // Прерывание выполнения функции
+      }
+
+      const data = logs.map(item => ({
+        // Подготовка массива объектов для Excel-таблицы
+
+        Дата: formatDateToDisplay(item.date),
+        // Дата события в отображаемом формате
+
+        Время: item.time,
+        // Время события
+
+        Уровень: item.level,
+        // Уровень события
+
+        Описание: item.text
+        // Текстовое описание события
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      // Создание листа Excel из массива данных
+
+      const wb = XLSX.utils.book_new();
+      // Создание новой Excel-книги
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Logs');
+      // Добавление листа Logs в Excel-книгу
+
+      XLSX.writeFile(wb, 'security_logs.xlsx');
+      // Сохранение и скачивание Excel-файла
+    }
+
+    renderLogs();
+    // Первичная отрисовка журнала событий при загрузке страницы
+  </script>
+</body>
+</html>

@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<!-- Объявление типа документа HTML5 -->
+
+<html lang="ru">
+<!-- Корневой элемент HTML-документа с указанием русского языка -->
+
+<head>
+  <meta charset="utf-8">
+  <!-- Установка кодировки UTF-8 для корректного отображения русских символов -->
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Настройка адаптивного отображения страницы на мобильных устройствах -->
+
+  <title>Анализ трафика</title>
+  <!-- Заголовок страницы во вкладке браузера -->
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Подключение библиотеки Bootstrap для использования готовых стилей интерфейса -->
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <!-- Подключение библиотеки SheetJS для экспорта данных в Excel -->
+
+  <style>
+    body { background: #f8fafc; color: #0f172a; }
+    .panel {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+    }
+    .form-control, .form-select {
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+    }
+    .result-box {
+      border-radius: 18px;
+      padding: 18px;
+      background: #f8fafc;
+      border: 1px solid #dbeafe;
+    }
+    .table thead th { white-space: nowrap; }
+    .pulse-dot {
+      width: 12px;
+      height: 12px;
+      background: #22c55e;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 0 rgba(34,197,94, 0.7);
+      animation: pulse 1.8s infinite;
+      margin-right: 8px;
+    }
+    .status-note {
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      margin-top: 12px;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.55); }
+      70% { box-shadow: 0 0 0 12px rgba(34,197,94,0); }
+      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-4">
+    <div class="panel p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+          <h2 class="mb-2">Анализ сетевого трафика</h2>
+          <!-- Заголовок страницы анализа трафика -->
+
+          <p class="mb-0 text-secondary">
+            Зарегистрируйте сетевой поток, выполните расчёт интегрального риска и сохраните результат в системе.
+          </p>
+          <!-- Краткое описание назначения данного раздела -->
+        </div>
+
+        <div class="text-success fw-semibold"><span class="pulse-dot"></span>Онлайн-мониторинг активен</div>
+        <!-- Индикатор активного режима мониторинга -->
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <div class="panel p-4">
+          <h4 class="mb-3">Параметры потока</h4>
+          <!-- Заголовок формы ввода параметров сетевого потока -->
+
+          <div class="mb-3">
+            <label class="form-label">Дата регистрации</label>
+            <!-- Подпись поля даты -->
+
+            <input type="text" class="form-control" id="eventDate" placeholder="дд/мм/гггг" maxlength="10" required>
+            <!-- Поле ввода даты регистрации потока -->
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Время регистрации</label>
+            <!-- Подпись поля времени -->
+
+            <input type="text" class="form-control" id="eventTime" placeholder="Например: 14:35" maxlength="5" required>
+            <!-- Поле ввода времени регистрации потока -->
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">IP-адрес</label>
+            <!-- Подпись поля IP-адреса -->
+
+            <input type="text" class="form-control" id="ip" placeholder="Например: 192.168.10.14" maxlength="50" required>
+            <!-- Поле ввода IP-адреса -->
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Протокол</label>
+            <!-- Подпись поля выбора протокола -->
+
+            <select class="form-select" id="protocol">
+              <!-- Выпадающий список выбора сетевого протокола -->
+
+              <option value="TLS">TLS</option>
+              <!-- Вариант протокола TLS -->
+
+              <option value="HTTPS">HTTPS</option>
+              <!-- Вариант протокола HTTPS -->
+
+              <option value="DTLS">DTLS</option>
+              <!-- Вариант протокола DTLS -->
+
+              <option value="WebSocket">WebSocket</option>
+              <!-- Вариант протокола WebSocket -->
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Энтропия трафика (0–1)</label>
+            <!-- Подпись поля значения энтропии -->
+
+            <input type="number" step="0.01" min="0" max="1" class="form-control" id="entropy" required>
+            <!-- Поле ввода энтропии трафика -->
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Подозрительность IP (0–1)</label>
+            <!-- Подпись поля уровня подозрительности IP -->
+
+            <input type="number" step="0.01" min="0" max="1" class="form-control" id="suspicion" required>
+            <!-- Поле ввода коэффициента подозрительности IP -->
+          </div>
+
+          <div class="d-grid gap-2">
+            <button class="btn btn-primary" onclick="analyzeTraffic()">Рассчитать и сохранить</button>
+            <!-- Кнопка запуска анализа трафика -->
+
+            <button class="btn btn-outline-secondary" onclick="fillCurrentDateTime()">Подставить текущие дату и время</button>
+            <!-- Кнопка автоматической подстановки текущих даты и времени -->
+
+            <button class="btn btn-outline-secondary" onclick="clearTrafficForm()">Очистить форму</button>
+            <!-- Кнопка очистки всех полей формы -->
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="panel p-4 mb-4">
+          <h4 class="mb-3">Результат обработки</h4>
+          <!-- Заголовок блока вывода результатов анализа -->
+
+          <div id="resultBox" class="result-box text-secondary">
+            После сохранения записи здесь будет отображён итог расчёта.
+          </div>
+          <!-- Область показа результата расчёта -->
+
+          <div id="autoActionBox"></div>
+          <!-- Область вывода автоматического действия системы -->
+        </div>
+
+        <div class="panel p-4">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h4 class="mb-0">Зарегистрированные потоки</h4>
+            <!-- Заголовок таблицы сохранённых потоков -->
+
+            <span class="badge bg-light text-dark" id="trafficCount">0 записей</span>
+            <!-- Счётчик количества сохранённых записей -->
+          </div>
+
+          <div class="table-responsive">
+            <table class="table align-middle" id="trafficTable">
+              <!-- Таблица для отображения зарегистрированных сетевых потоков -->
+
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <!-- Заголовок столбца с датой -->
+
+                  <th>Время</th>
+                  <!-- Заголовок столбца со временем -->
+
+                  <th>IP</th>
+                  <!-- Заголовок столбца IP-адреса -->
+
+                  <th>Протокол</th>
+                  <!-- Заголовок столбца протокола -->
+
+                  <th>Энтропия</th>
+                  <!-- Заголовок столбца энтропии -->
+
+                  <th>IP-риск</th>
+                  <!-- Заголовок столбца подозрительности IP -->
+
+                  <th>Интегральный риск</th>
+                  <!-- Заголовок столбца итогового риска -->
+
+                  <th>Статус</th>
+                  <!-- Заголовок столбца текстового статуса -->
+                </tr>
+              </thead>
+
+              <tbody id="trafficTableBody"></tbody>
+              <!-- Тело таблицы, которое будет заполняться через JavaScript -->
+            </table>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-success" onclick="exportTrafficExcel()">Выгрузка в Excel</button>
+            <!-- Кнопка выгрузки данных по трафику в Excel -->
+
+            <a href="{% url 'index' %}" class="btn btn-outline-primary">На главную</a>
+            <!-- Ссылка возврата на главную страницу -->
+
+            <a href="{% url 'analytics' %}" class="btn btn-outline-secondary">Перейти к аналитике</a>
+            <!-- Ссылка перехода на страницу аналитики риска -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getTraffic() {
+      // Функция получения сохранённых записей трафика из localStorage
+
+      return JSON.parse(localStorage.getItem('trafficRecords') || '[]');
+      // Возвращает массив trafficRecords либо пустой массив
+    }
+
+    function saveTraffic(records) {
+      // Функция сохранения массива трафика в localStorage
+
+      localStorage.setItem('trafficRecords', JSON.stringify(records));
+      // Преобразует массив в JSON-строку и сохраняет по ключу trafficRecords
+    }
+
+    function getLogs() {
+      // Функция получения журнала событий безопасности
+
+      return JSON.parse(localStorage.getItem('securityLogs') || '[]');
+      // Возвращает массив логов либо пустой массив
+    }
+
+    function saveLogs(records) {
+      // Функция сохранения журнала событий в localStorage
+
+      localStorage.setItem('securityLogs', JSON.stringify(records));
+      // Сохраняет журнал безопасности по ключу securityLogs
+    }
+
+    function getBlocks() {
+      // Функция получения списка заблокированных IP-адресов
+
+      return JSON.parse(localStorage.getItem('blockRecords') || '[]');
+      // Возвращает массив blockRecords либо пустой массив
+    }
+
+    function saveBlocks(records) {
+      // Функция сохранения массива блокировок
+
+      localStorage.setItem('blockRecords', JSON.stringify(records));
+      // Сохраняет данные блокировок в localStorage
+    }
+
+    function addLog(date, time, level, text) {
+      // Функция добавления новой записи в журнал событий
+
+      const logs = getLogs();
+      // Получение текущего массива логов
+
+      logs.unshift({ date, time, level, text });
+      // Добавление новой записи в начало массива
+
+      saveLogs(logs);
+      // Сохранение обновлённого журнала
+    }
+
+    function normalizeDateInput(value) {
+      // Функция автоматического форматирования даты
+
+      let cleaned = value.replace(/[^\d]/g, '').slice(0, 8);
+      // Удаляет лишние символы и ограничивает длину до 8 цифр
+
+      if (cleaned.length >= 5) {
+        // Если введено не менее 5 цифр, формируется полный шаблон даты
+
+        return cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4) + '/' + cleaned.slice(4);
+        // Возвращает дату в формате ДД/ММ/ГГГГ
+      }
+
+      if (cleaned.length >= 3) {
+        // Если введено от 3 до 4 цифр, добавляется один разделитель
+
+        return cleaned.slice(0, 2) + '/' + cleaned.slice(2);
+        // Возвращает промежуточный формат даты
+      }
+
+      return cleaned;
+      // Возвращает текущее значение, если цифр ещё недостаточно
+    }
+
+    function isValidDate(value) {
+      // Функция проверки корректности введённой даты
+
+      if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return false;
+      // Проверяет соответствие формату ДД/ММ/ГГГГ
+
+      const [dd, mm, yyyy] = value.split('/').map(Number);
+      // Разделяет дату на день, месяц и год
+
+      const date = new Date(yyyy, mm - 1, dd);
+      // Создаёт объект даты JavaScript
+
+      return date.getFullYear() === yyyy && date.getMonth() === mm - 1 && date.getDate() === dd;
+      // Проверяет, существует ли такая календарная дата
+    }
+
+    function fillCurrentDateTime() {
+      // Функция подстановки текущих даты и времени в форму
+
+      const now = new Date();
+      // Получение текущих даты и времени
+
+      const dd = String(now.getDate()).padStart(2, '0');
+      // Получение дня месяца в двухзначном формате
+
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      // Получение номера месяца в двухзначном формате
+
+      const yyyy = now.getFullYear();
+      // Получение текущего года
+
+      const hh = String(now.getHours()).padStart(2, '0');
+      // Получение часов в двухзначном формате
+
+      const mi = String(now.getMinutes()).padStart(2, '0');
+      // Получение минут в двухзначном формате
+
+      document.getElementById('eventDate').value = `${dd}/${mm}/${yyyy}`;
+      // Подстановка текущей даты в поле eventDate
+
+      document.getElementById('eventTime').value = `${hh}:${mi}`;
+      // Подстановка текущего времени в поле eventTime
+    }
+
+    function clearTrafficForm() {
+      // Функция очистки формы ввода параметров потока
+
+      document.getElementById('eventDate').value = '';
+      // Очистка поля даты
+
+      document.getElementById('eventTime').value = '';
+      // Очистка поля времени
+
+      document.getElementById('ip').value = '';
+      // Очистка поля IP-адреса
+
+      document.getElementById('protocol').value = 'TLS';
+      // Возврат значения протокола по умолчанию
+
+      document.getElementById('entropy').value = '';
+      // Очистка поля энтропии
+
+      document.getElementById('suspicion').value = '';
+      // Очистка поля подозрительности IP
+    }
+
+    function normalizeTimeInput(value) {
+      // Функция автоматического форматирования времени
+
+      let cleaned = value.replace(/[^\d]/g, '').slice(0, 4);
+      // Удаляет все символы кроме цифр и ограничивает ввод четырьмя цифрами
+
+      if (cleaned.length >= 3) cleaned = cleaned.slice(0, 2) + ':' + cleaned.slice(2);
+      // Добавляет двоеточие после часов
+
+      return cleaned;
+      // Возвращает отформатированное значение времени
+    }
+
+    function isValid24HourTime(value) {
+      // Функция проверки времени в формате 24 часов
+
+      return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
+      // Возвращает true, если время соответствует формату HH:MM
+    }
+
+    document.getElementById('eventDate').addEventListener('input', function () {
+      // Обработчик автоматического форматирования даты при вводе
+
+      this.value = normalizeDateInput(this.value);
+      // Применяет функцию форматирования даты
+    });
+
+    document.getElementById('eventTime').addEventListener('input', function () {
+      // Обработчик автоматического форматирования времени при вводе
+
+      this.value = normalizeTimeInput(this.value);
+      // Применяет функцию форматирования времени
+    });
+
+    function addBlockIfNeeded(date, time, ip, reason) {
+      // Функция добавления IP-адреса в список блокировок при необходимости
+
+      const blocks = getBlocks();
+      // Получение текущего массива блокировок
+
+      const alreadyExists = blocks.some(item => item.ip === ip);
+      // Проверка, существует ли уже такая блокировка
+
+      if (!alreadyExists) {
+        // Если IP ещё не заблокирован, добавляется новая запись
+
+        blocks.unshift({ date, time, ip, reason });
+        // Добавление блокировки в начало массива
+
+        saveBlocks(blocks);
+        // Сохранение обновлённого списка блокировок
+
+        return true;
+        // Возврат признака успешного добавления
+      }
+
+      return false;
+      // Возврат false, если IP уже был в списке блокировок
+    }
+
+    function analyzeTraffic() {
+      // Основная функция анализа сетевого потока
+
+      const date = document.getElementById('eventDate').value.trim();
+      // Получение даты из формы
+
+      const time = document.getElementById('eventTime').value.trim();
+      // Получение времени из формы
+
+      const ip = document.getElementById('ip').value.trim();
+      // Получение IP-адреса из формы
+
+      const protocol = document.getElementById('protocol').value;
+      // Получение выбранного сетевого протокола
+
+      const entropy = parseFloat(document.getElementById('entropy').value);
+      // Преобразование значения энтропии в число
+
+      const suspicion = parseFloat(document.getElementById('suspicion').value);
+      // Преобразование значения подозрительности IP в число
+
+      if (!date || !time || !ip || Number.isNaN(entropy) || Number.isNaN(suspicion)) {
+        // Проверка заполненности всех полей формы
+
+        alert('Заполните все поля формы.');
+        // Вывод сообщения об ошибке
+
+        return;
+        // Прерывание выполнения функции
+      }
+
+      if (!isValidDate(date)) {
+        // Проверка корректности формата даты
+
+        alert('Введите дату в формате ДД/ММ/ГГГГ.');
+        // Сообщение о неверной дате
+
+        return;
+        // Прерывание выполнения функции
+      }
+
+      if (!isValid24HourTime(time)) {
+        // Проверка корректности формата времени
+
+        alert('Введите время в 24-часовом формате HH:MM.');
+        // Сообщение о неверном формате времени
+
+        return;
+        // Прерывание выполнения функции
+      }
+
+      if (entropy < 0 || entropy > 1 || suspicion < 0 || suspicion > 1) {
+        // Проверка допустимого диапазона числовых параметров
+
+        alert('Энтропия и подозрительность IP должны быть только в диапазоне от 0 до 1.');
+        // Сообщение о выходе значений за допустимые пределы
+
+        return;
+        // Прерывание выполнения функции
+      }
+
+      const risk = +(entropy * suspicion).toFixed(2);
+      // Расчёт интегрального риска как произведения энтропии и подозрительности IP
+
+      let status = 'Низкий риск';
+      // Начальное текстовое значение статуса
+
+      let badge = 'success';
+      // Начальный цвет визуального индикатора статуса
+
+      let level = 'INFO';
+      // Начальный уровень события для журнала
+
+      let message = `Зарегистрирован поток ${ip} по протоколу ${protocol}.`;
+      // Текст сообщения журнала для обычного потока
+
+      let autoActionText = `<div class="status-note alert alert-success mb-0">Поток сохранён как нормальный. Автоматические меры не применялись.</div>`;
+      // Текст уведомления о том, что автоматические меры не потребовались
+
+      if (risk >= 0.7) {
+        // Обработка ситуации высокого риска
+
+        status = 'Высокий риск';
+        // Установка текстового статуса высокого риска
+
+        badge = 'danger';
+        // Установка красного индикатора статуса
+
+        level = 'CRITICAL';
+        // Установка критического уровня события
+
+        message = `Обнаружен критический уровень риска для ${ip} (${protocol}).`;
+        // Формирование сообщения журнала о критическом событии
+
+        const blockReason = `Автоматическая блокировка: интегральный риск ${risk.toFixed(2)}.`;
+        // Формирование причины автоматической блокировки
+
+        const added = addBlockIfNeeded(date, time, ip, blockReason);
+        // Попытка автоматически добавить IP в список блокировок
+
+        if (added) {
+          // Если IP успешно добавлен в блокировки
+
+          addLog(date, time, 'CRITICAL', `IP-адрес ${ip} автоматически добавлен в блокировки. Основание: ${blockReason}`);
+          // Добавление отдельной записи в журнал о блокировке
+
+          autoActionText = `<div class="status-note alert alert-danger mb-0">Критический порог превышен. IP-адрес автоматически добавлен в блокировки.</div>`;
+          // Вывод сообщения об автоматическом применении блокировки
+        } else {
+          // Если IP уже находился в списке блокировок
+
+          autoActionText = `<div class="status-note alert alert-danger mb-0">Критический порог превышен. IP-адрес уже присутствует в списке блокировок.</div>`;
+          // Вывод сообщения о наличии IP в списке блокировок
+        }
+      } else if (risk >= 0.4) {
+        // Обработка ситуации среднего риска
+
+        status = 'Средний риск';
+        // Установка статуса среднего риска
+
+        badge = 'warning';
+        // Установка жёлтого индикатора статуса
+
+        level = 'WARNING';
+        // Установка уровня предупреждения
+
+        message = `Выявлен поток со средним уровнем риска для ${ip} (${protocol}).`;
+        // Формирование текста предупреждения для журнала
+
+        autoActionText = `<div class="status-note alert alert-warning mb-0">Обнаружен средний риск. Запись сохранена, в журнал добавлено предупреждение.</div>`;
+        // Сообщение о сохранении записи с предупреждением
+      }
+
+      const traffic = getTraffic();
+      // Получение текущего массива сетевых потоков
+
+      traffic.unshift({
+        // Добавление новой записи в начало массива
+
+        date,
+        // Дата регистрации потока
+
+        time,
+        // Время регистрации потока
+
+        ip,
+        // IP-адрес потока
+
+        protocol,
+        // Используемый протокол
+
+        entropy,
+        // Значение энтропии
+
+        suspicion,
+        // Значение подозрительности IP
+
+        risk,
+        // Вычисленное значение интегрального риска
+
+        status
+        // Текстовый статус уровня риска
+      });
+
+      saveTraffic(traffic);
+      // Сохранение обновлённого массива потоков
+
+      addLog(date, time, level, message);
+      // Добавление записи о событии в журнал
+
+      document.getElementById('resultBox').innerHTML = `
+        <div class="fw-bold mb-2">Результат анализа потока</div>
+        <div><strong>Дата:</strong> ${date}</div>
+        <div><strong>Время:</strong> ${time}</div>
+        <div><strong>IP-адрес:</strong> ${ip}</div>
+        <div><strong>Протокол:</strong> ${protocol}</div>
+        <div><strong>Энтропия:</strong> ${entropy.toFixed(2)}</div>
+        <div><strong>Подозрительность IP:</strong> ${suspicion.toFixed(2)}</div>
+        <div><strong>Интегральный риск:</strong> ${risk.toFixed(2)}</div>
+        <div class="mt-2"><span class="badge bg-${badge}">${status}</span></div>
+      `;
+      // Вывод детального результата анализа в блок resultBox
+
+      document.getElementById('autoActionBox').innerHTML = autoActionText;
+      // Вывод информации об автоматических действиях системы
+
+      renderTrafficTable();
+      // Обновление таблицы зарегистрированных потоков
+
+      clearTrafficForm();
+      // Очистка формы после сохранения
+    }
+
+    function renderTrafficTable() {
+      // Функция отображения таблицы зарегистрированных потоков
+
+      const body = document.getElementById('trafficTableBody');
+      // Получение ссылки на тело таблицы
+
+      const traffic = getTraffic();
+      // Получение массива сохранённых потоков
+
+      body.innerHTML = '';
+      // Очистка содержимого таблицы перед повторной отрисовкой
+
+      traffic.forEach(row => {
+        // Перебор всех потоков для формирования строк таблицы
+
+        let badge = 'success';
+        // Значение индикатора статуса по умолчанию
+
+        if (row.risk >= 0.7) badge = 'danger';
+        // Установка красного индикатора для высокого риска
+
+        else if (row.risk >= 0.4) badge = 'warning';
+        // Установка жёлтого индикатора для среднего риска
+
+        body.innerHTML += `
+          <tr>
+            <td>${row.date}</td>
+            <td>${row.time}</td>
+            <td>${row.ip}</td>
+            <td>${row.protocol}</td>
+            <td>${Number(row.entropy).toFixed(2)}</td>
+            <td>${Number(row.suspicion).toFixed(2)}</td>
+            <td>${Number(row.risk).toFixed(2)}</td>
+            <td><span class="badge bg-${badge}">${row.status}</span></td>
+          </tr>
+        `;
+        // Добавление новой строки таблицы с данными потока
+      });
+
+      document.getElementById('trafficCount').textContent = `${traffic.length} записей`;
+      // Обновление счётчика количества сохранённых записей
+    }
+
+    function exportTrafficExcel() {
+      // Функция экспорта таблицы трафика в Excel
+
+      const traffic = getTraffic();
+      // Получение массива сетевых потоков
+
+      if (!traffic.length) {
+        // Проверка наличия данных для выгрузки
+
+        alert('Нет данных для выгрузки.');
+        // Сообщение об отсутствии данных
+
+        return;
+        // Прерывание выполнения функции
+      }
+
+      const data = traffic.map(item => ({
+        // Преобразование массива потоков в структуру для Excel
+
+        Дата: item.date,
+        // Дата регистрации
+
+        Время: item.time,
+        // Время регистрации
+
+        IP: item.ip,
+        // IP-адрес потока
+
+        Протокол: item.protocol,
+        // Название протокола
+
+        Энтропия: Number(item.entropy).toFixed(2),
+        // Значение энтропии с округлением
+
+        'Подозрительность IP': Number(item.suspicion).toFixed(2),
+        // Значение подозрительности IP с округлением
+
+        'Интегральный риск': Number(item.risk).toFixed(2),
+        // Итоговое значение интегрального риска с округлением
+
+        Статус: item.status
+        // Текстовый статус риска
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      // Создание Excel-листа из подготовленных данных
+
+      const wb = XLSX.utils.book_new();
+      // Создание новой Excel-книги
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Traffic');
+      // Добавление листа Traffic в книгу Excel
+
+      XLSX.writeFile(wb, 'traffic_records.xlsx');
+      // Сохранение и скачивание Excel-файла
+    }
+
+    fillCurrentDateTime();
+    // Автоматическая подстановка текущих даты и времени при открытии страницы
+
+    renderTrafficTable();
+    // Первичная отрисовка таблицы зарегистрированных потоков
+  </script>
+</body>
+</html>

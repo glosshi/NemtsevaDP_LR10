@@ -1,0 +1,102 @@
+[
+  {
+    "timestamp": "2026-05-14T01:30:15",
+    "source_ip": "192.168.1.100",
+    "dest_port": 443,
+    "protocol": "TCP",
+    "packet_size": 1200,
+    "flags": ["SYN"],
+    "risk_level": "low",
+    "description": "Обычный HTTPS-трафик"
+  },
+  {
+    "timestamp": "2026-05-14T01:31:22",
+    "source_ip": "203.0.113.45",
+    "dest_port": 22,
+    "protocol": "TCP",
+    "packet_size": 800,
+    "flags": ["SYN", "MULTIPLE_ATTEMPTS"],
+    "risk_level": "high",
+    "description": "Многократные попытки SSH-подключения с внешнего IP"
+  },
+  {
+    "timestamp": "2026-05-14T01:32:10",
+    "source_ip": "10.0.0.5",
+    "dest_port": 80,
+    "protocol": "TCP",
+    "packet_size": 1500,
+    "flags": ["ACK"],
+    "risk_level": "low",
+    "description": "Стандартный HTTP-запрос из локальной сети"
+  },
+  {
+    "timestamp": "2026-05-14T01:33:45",
+    "source_ip": "198.51.100.78",
+    "dest_port": 3389,
+    "protocol": "TCP",
+    "packet_size": 2400,
+    "flags": ["SYN", "SUSPICIOUS_PAYLOAD"],
+    "risk_level": "high",
+    "description": "Подозрительная попытка RDP-подключения с нестандартной нагрузкой"
+  },
+  {
+    "timestamp": "2026-05-14T01:34:30",
+    "source_ip": "192.168.1.105",
+    "dest_port": 53,
+    "protocol": "UDP",
+    "packet_size": 512,
+    "flags": [],
+    "risk_level": "low",
+    "description": "DNS-запрос из локальной сети"
+  },
+  {
+    "timestamp": "2026-05-14T01:35:12",
+    "source_ip": "185.220.101.25",
+    "dest_port": 445,
+    "protocol": "TCP",
+    "packet_size": 5000,
+    "flags": ["SYN", "PORT_SCAN"],
+    "risk_level": "medium",
+    "description": "Подозрительная активность на порту SMB, возможно сканирование"
+  },
+  {
+    "timestamp": "2026-05-14T01:36:05",
+    "source_ip": "192.168.1.110",
+    "dest_port": 8080,
+    "protocol": "TCP",
+    "packet_size": 900,
+    "flags": ["ACK"],
+    "risk_level": "low",
+    "description": "Запрос к внутреннему веб-сервису"
+  },
+  {
+    "timestamp": "2026-05-14T01:37:20",
+    "source_ip": "104.244.42.65",
+    "dest_port": 1433,
+    "protocol": "TCP",
+    "packet_size": 3200,
+    "flags": ["SYN", "SQL_INJECTION_ATTEMPT"],
+    "risk_level": "high",
+    "description": "Попытка SQL-инъекции на порту MS SQL Server"
+  },
+  {
+    "timestamp": "2026-05-14T01:38:40",
+    "source_ip": "10.0.0.8",
+    "dest_port": 443,
+    "protocol": "TCP",
+    "packet_size": 1100,
+    "flags": ["ACK"],
+    "risk_level": "low",
+    "description": "Защищённое соединение из локальной сети"
+  },
+  {
+    "timestamp": "2026-05-14T01:39:55",
+    "source_ip": "45.33.32.156",
+    "dest_port": 23,
+    "protocol": "TCP",
+    "packet_size": 600,
+    "flags": ["SYN", "TELNET_ATTEMPT"],
+    "risk_level": "medium",
+    "description": "Попытка Telnet-подключения (устаревший незащищённый протокол)"
+  }
+]
